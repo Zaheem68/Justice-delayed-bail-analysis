@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Justice Delayed, Justice Denied — Statistical Research</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0a0a0f;
+    --paper: #f5f0e8;
+    --accent: #c8412b;
+    --accent2: #e8a020;
+    --muted: #8a8070;
+    --card-bg: #1a1a22;
+    --line: rgba(200,190,170,0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--ink);
+    color: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* ─── NOISE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.35;
+  }
+
+  /* ─── TYPOGRAPHY ─── */
+  .serif { font-family: 'Playfair Display', serif; }
+  .mono  { font-family: 'IBM Plex Mono', monospace; }
+
+  /* ─── NAVBAR ─── */
+  #navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    transition: background 0.4s, backdrop-filter 0.4s, border-color 0.4s;
+  }
+  #navbar.scrolled {
+    background: rgba(10,10,15,0.88);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-link {
+    position: relative;
+    color: rgba(245,240,232,0.6);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color 0.2s;
+    padding-bottom: 2px;
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute; bottom: -2px; left: 0; right: 0;
+    height: 1px; background: var(--accent);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+  .nav-link:hover { color: var(--paper); }
+  .nav-link:hover::after { transform: scaleX(1); }
+  .nav-link.active { color: var(--paper); }
+  .nav-link.active::after { transform: scaleX(1); }
+
+  /* ─── HERO ─── */
+  #hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 clamp(1.5rem, 6vw, 6rem) clamp(3rem, 8vh, 6rem);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid-line {
+    position: absolute;
+    background: var(--line);
+    pointer-events: none;
+  }
+  .hero-grid-line.v { width: 1px; top: 0; bottom: 0; }
+  .hero-grid-line.h { height: 1px; left: 0; right: 0; }
+
+  .hero-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .hero-tag::before {
+    content: '';
+    display: inline-block; width: 2rem; height: 1px;
+    background: var(--accent);
+  }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(2.8rem, 7vw, 6.5rem);
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+  }
+  .hero-title .em { color: var(--accent); font-style: italic; }
+
+  .hero-subtitle {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: clamp(1rem, 1.6vw, 1.3rem);
+    color: rgba(245,240,232,0.55);
+    max-width: 52ch;
+    margin-top: 1.5rem;
+    line-height: 1.7;
+  }
+
+  .hero-meta {
+    margin-top: 3rem;
+    display: flex; flex-wrap: wrap; gap: 2.5rem;
+    align-items: flex-end;
+  }
+  .hero-authors {
+    display: flex; flex-direction: column; gap: 0.35rem;
+  }
+  .hero-authors .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase;
+  }
+  .hero-authors .names {
+    font-size: 0.95rem; font-weight: 400;
+    color: rgba(245,240,232,0.8);
+  }
+
+  .hero-stat-strip {
+    display: flex; gap: 2.5rem; flex-wrap: wrap;
+    margin-top: 3rem; padding-top: 2rem;
+    border-top: 1px solid var(--line);
+  }
+  .hero-stat { display: flex; flex-direction: column; gap: 0.3rem; }
+  .hero-stat .val {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700; font-size: 2rem;
+    color: var(--accent2);
+  }
+  .hero-stat .desc {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.1em;
+    color: var(--muted); text-transform: uppercase;
+  }
+
+  .scroll-hint {
+    position: absolute; bottom: 2rem; right: clamp(1.5rem,6vw,6rem);
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    color: var(--muted); font-size: 0.65rem;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .scroll-arrow {
+    width: 1px; height: 3rem;
+    background: linear-gradient(to bottom, var(--muted), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+  @keyframes scrollPulse {
+    0%,100% { opacity: 0.4; transform: scaleY(1); }
+    50% { opacity: 1; transform: scaleY(1.15); }
+  }
+
+  /* ─── SECTION ─── */
+  .section-wrapper {
+    position: relative; z-index: 1;
+    padding: clamp(4rem,10vh,8rem) clamp(1.5rem,6vw,6rem);
+    max-width: 1280px; margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem; letter-spacing: 0.18em;
+    color: var(--accent); text-transform: uppercase;
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .section-label::after {
+    content: ''; flex: 1; max-width: 4rem;
+    height: 1px; background: var(--accent); opacity: 0.5;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: clamp(1.8rem, 3.5vw, 3rem);
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+  .section-title .italic { font-style: italic; color: var(--accent2); }
+
+  .section-intro {
+    font-size: 1.05rem;
+    color: rgba(245,240,232,0.6);
+    max-width: 60ch; line-height: 1.8;
+    margin-bottom: 3rem;
+  }
+
+  /* ─── DIVIDER ─── */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 80%, transparent);
+    margin: 0 clamp(1.5rem,6vw,6rem);
+    position: relative; z-index: 1;
+  }
+
+  /* ─── PHASE TABS ─── */
+  .phase-tabs {
+    display: flex; gap: 0; overflow-x: auto;
+    border: 1px solid var(--line); border-radius: 2px;
+    margin-bottom: 2.5rem;
+    scrollbar-width: none;
+  }
+  .phase-tabs::-webkit-scrollbar { display: none; }
+
+  .phase-tab {
+    flex: 1; min-width: 140px;
+    padding: 1rem 1.25rem;
+    background: transparent;
+    border: none; border-right: 1px solid var(--line);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; cursor: pointer;
+    transition: all 0.25s;
+    display: flex; flex-direction: column; gap: 0.3rem;
+    text-align: left;
+  }
+  .phase-tab:last-child { border-right: none; }
+  .phase-tab .phase-num { color: var(--accent); opacity: 0.6; font-size: 0.6rem; }
+  .phase-tab:hover { background: rgba(200,65,43,0.05); color: var(--paper); }
+  .phase-tab.active {
+    background: rgba(200,65,43,0.12);
+    color: var(--paper);
+    border-bottom: 2px solid var(--accent);
+  }
+  .phase-tab.active .phase-num { opacity: 1; }
+
+  /* ─── PHASE PANEL ─── */
+  .phase-panel { display: none; }
+  .phase-panel.active { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+  /* ─── STAT CARDS ─── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 2rem 0;
+  }
+
+  .stat-card {
+    background: var(--card-bg);
+    padding: 1.75rem 1.5rem;
+    position: relative; overflow: hidden;
+    transition: background 0.25s;
+  }
+  .stat-card:hover { background: #1f1f2e; }
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px; background: transparent;
+    transition: background 0.3s;
+  }
+  .stat-card:hover::before { background: var(--accent); }
+
+  .stat-card .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.14em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .stat-card .value {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700; font-size: 2rem;
+    line-height: 1; color: var(--paper);
+  }
+  .stat-card .value.accent { color: var(--accent); }
+  .stat-card .value.accent2 { color: var(--accent2); }
+  .stat-card .sub {
+    font-size: 0.78rem; color: var(--muted);
+    margin-top: 0.5rem;
+  }
+
+  /* ─── INSIGHT BOX ─── */
+  .insight-box {
+    border-left: 3px solid var(--accent2);
+    background: rgba(232,160,32,0.06);
+    padding: 1.25rem 1.5rem;
+    border-radius: 0 2px 2px 0;
+    margin: 2rem 0;
+  }
+  .insight-box .insight-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem; color: var(--accent2);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .insight-box p {
+    font-size: 0.95rem; line-height: 1.7;
+    color: rgba(245,240,232,0.75);
+  }
+
+  /* ─── RESULT BOX ─── */
+  .result-box {
+    border: 1px solid rgba(200,65,43,0.35);
+    background: rgba(200,65,43,0.06);
+    border-radius: 2px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+  }
+  .result-box .verdict {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem; letter-spacing: 0.14em;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .result-box .p-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem; font-weight: 700;
+    color: var(--accent);
+  }
+  .result-box p { font-size: 0.88rem; color: rgba(245,240,232,0.65); flex: 1 1 200px; }
+
+  /* ─── IMAGE PLACEHOLDER ─── */
+  .img-placeholder {
+    background: #111118;
+    border: 1px dashed rgba(200,190,170,0.2);
+    border-radius: 2px;
+    min-height: 320px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1rem; padding: 2rem;
+    position: relative; overflow: hidden;
+    margin: 2rem 0;
+  }
+  .img-placeholder::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0, transparent 8px,
+      rgba(255,255,255,0.013) 8px, rgba(255,255,255,0.013) 9px
+    );
+  }
+  .img-placeholder .ph-icon {
+    width: 48px; height: 48px;
+    border: 1px solid rgba(200,190,170,0.2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 1.2rem;
+  }
+  .img-placeholder .ph-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.1em;
+    color: var(--muted); text-transform: uppercase;
+    text-align: center;
+  }
+  .img-placeholder .ph-note {
+    font-size: 0.78rem; color: rgba(138,128,112,0.6);
+    text-align: center; max-width: 36ch;
+  }
+
+  /* ─── SECONDARY TABS ─── */
+  .secondary-tabs { display: flex; gap: 1px; margin-bottom: 2.5rem; }
+  .sec-tab {
+    padding: 0.85rem 1.75rem;
+    background: #111118; border: 1px solid var(--line);
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; cursor: pointer;
+    transition: all 0.25s;
+  }
+  .sec-tab:hover { background: rgba(200,65,43,0.06); color: var(--paper); }
+  .sec-tab.active {
+    background: var(--card-bg); color: var(--paper);
+    border-bottom: 2px solid var(--accent2);
+  }
+
+  /* ─── METHODOLOGY TIMELINE ─── */
+  .timeline {
+    position: relative; padding-left: 2.5rem;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute; left: 0; top: 0.5rem; bottom: 0.5rem;
+    width: 1px; background: var(--line);
+  }
+  .timeline-step {
+    position: relative; margin-bottom: 2.5rem;
+  }
+  .timeline-step::before {
+    content: '';
+    position: absolute; left: -2.5rem;
+    top: 0.4rem; width: 9px; height: 9px;
+    border-radius: 50%; border: 1px solid var(--accent);
+    background: var(--ink);
+    transform: translateX(-4px);
+    transition: background 0.3s;
+  }
+  .timeline-step:hover::before { background: var(--accent); }
+  .timeline-step .step-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem; color: var(--accent);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .timeline-step h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem; margin-bottom: 0.5rem;
+  }
+  .timeline-step p {
+    font-size: 0.9rem; color: rgba(245,240,232,0.6); line-height: 1.7;
+  }
+
+  /* ─── COMPARISON TABLE ─── */
+  .compare-table { width: 100%; border-collapse: collapse; margin: 2rem 0; }
+  .compare-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase;
+    padding: 0.75rem 1rem; text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .compare-table td {
+    padding: 1rem;
+    font-size: 0.88rem;
+    border-bottom: 1px solid rgba(200,190,170,0.06);
+    vertical-align: middle;
+  }
+  .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .compare-table .bail-a { color: var(--accent); font-weight: 500; }
+  .compare-table .bail-r { color: var(--accent2); font-weight: 500; }
+  .compare-table .sig {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem; color: var(--accent);
+    background: rgba(200,65,43,0.1);
+    padding: 0.2rem 0.6rem; border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--line);
+    padding: 3rem clamp(1.5rem,6vw,6rem);
+    display: flex; flex-wrap: wrap; gap: 2rem;
+    justify-content: space-between; align-items: center;
+  }
+  footer .ft-left { display: flex; flex-direction: column; gap: 0.5rem; }
+  footer .ft-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem; font-weight: 700;
+  }
+  footer .ft-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  footer .ft-right {
+    display: flex; gap: 2rem; flex-wrap: wrap;
+  }
+  footer .ft-right a {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.1em;
+    color: var(--muted); text-transform: uppercase;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  footer .ft-right a:hover { color: var(--paper); }
+
+  /* ─── BIG QUOTE ─── */
+  .big-quote {
+    position: relative; z-index: 1;
+    padding: clamp(3rem,8vh,6rem) clamp(1.5rem,6vw,6rem);
+    text-align: center;
+  }
+  .big-quote blockquote {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(1.4rem, 3vw, 2.4rem);
+    line-height: 1.4;
+    color: rgba(245,240,232,0.7);
+    max-width: 50ch; margin: 0 auto;
+  }
+  .big-quote cite {
+    display: block; margin-top: 1.5rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-style: normal; font-size: 0.68rem;
+    letter-spacing: 0.14em; color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* ─── SCROLLY PROGRESS ─── */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; z-index: 200;
+    height: 2px; background: var(--accent);
+    transition: width 0.1s linear;
+    width: 0%;
+  }
+
+  /* ─── MOBILE NAV ─── */
+  #mobile-menu {
+    display: none;
+    position: fixed; inset: 0; z-index: 99;
+    background: rgba(10,10,15,0.97);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 2rem;
+  }
+  #mobile-menu.open { display: flex; }
+  #mobile-menu a {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem; color: var(--paper);
+    text-decoration: none;
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    .phase-tabs { flex-wrap: nowrap; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .secondary-tabs { flex-wrap: wrap; }
+    .sec-tab { flex: 1; text-align: center; }
+    .compare-table { font-size: 0.78rem; }
+    .compare-table td, .compare-table th { padding: 0.6rem 0.5rem; }
+    footer { flex-direction: column; align-items: flex-start; }
+  }
+  @media (max-width: 480px) {
+    .stat-grid { grid-template-columns: 1fr; }
+    .hero-stat-strip { flex-wrap: wrap; gap: 1.5rem; }
+  }
+
+  /* ─── ENTER ANIMATIONS ─── */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ─── FORMULA DISPLAY ─── */
+  .formula {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 0.75rem 1.25rem;
+    margin: 1rem 0;
+    color: var(--accent2);
+    display: inline-block;
+  }
+
+  /* ─── BADGE ─── */
+  .badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.7rem;
+    border-radius: 1px;
+    border: 1px solid;
+  }
+  .badge-red { color: var(--accent); border-color: rgba(200,65,43,0.35); background: rgba(200,65,43,0.08); }
+  .badge-amber { color: var(--accent2); border-color: rgba(232,160,32,0.35); background: rgba(232,160,32,0.08); }
+  .badge-muted { color: var(--muted); border-color: var(--line); background: rgba(138,128,112,0.05); }
+
+  /* Chart-like bar placeholders */
+  .bar-compare {
+    display: flex; flex-direction: column; gap: 1rem; margin: 1.5rem 0;
+  }
+  .bar-row { display: flex; align-items: center; gap: 1rem; }
+  .bar-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem; letter-spacing: 0.08em;
+    text-transform: uppercase; width: 140px; flex-shrink: 0;
+    color: var(--muted);
+  }
+  .bar-track {
+    flex: 1; height: 2px; background: var(--line);
+    border-radius: 1px; position: relative; overflow: visible;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 1px;
+    position: absolute; left: 0; top: 0;
+    transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
+    width: 0;
+  }
+  .bar-fill.animated { width: var(--w); }
+  .bar-fill-a { background: var(--accent); }
+  .bar-fill-r { background: var(--accent2); }
+  .bar-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem; color: var(--paper); width: 60px; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div id="progress-bar"></div>
+
+<!-- NAVBAR -->
+<nav id="navbar" class="py-4 px-6">
+  <div class="max-w-screen-xl mx-auto flex items-center justify-between">
+    <a href="#hero" class="flex items-center gap-3 group">
+      <span class="mono text-xs tracking-widest text-red-500 uppercase">JD/JD</span>
+      <span class="text-xs text-gray-500 hidden md:block">— Research Portfolio</span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#methodology" class="nav-link">Methodology</a>
+      <a href="#core" class="nav-link">Core Hypothesis</a>
+      <a href="#secondary" class="nav-link">Secondary Insights</a>
+      <a href="#conclusion" class="nav-link">Findings</a>
+    </div>
+    <button id="menu-btn" class="md:hidden text-gray-400 hover:text-white transition-colors" aria-label="Open menu">
+      <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+        <line x1="0" y1="1" x2="22" y2="1" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="4" y1="8" x2="22" y2="8" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="8" y1="15" x2="22" y2="15" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div id="mobile-menu">
+  <button id="menu-close" class="absolute top-6 right-6 text-gray-400 text-2xl">&times;</button>
+  <a href="#methodology" onclick="closeMobileMenu()">Methodology</a>
+  <a href="#core" onclick="closeMobileMenu()">Core Hypothesis</a>
+  <a href="#secondary" onclick="closeMobileMenu()">Secondary Insights</a>
+  <a href="#conclusion" onclick="closeMobileMenu()">Findings</a>
+</div>
+
+<!-- ══════════════════════════════ HERO ══════════════════════════════ -->
+<section id="hero">
+  <!-- grid lines -->
+  <div class="hero-grid-line v" style="left:25%"></div>
+  <div class="hero-grid-line v" style="left:50%"></div>
+  <div class="hero-grid-line v" style="left:75%"></div>
+  <div class="hero-grid-line h" style="top:33%"></div>
+  <div class="hero-grid-line h" style="top:66%"></div>
+
+  <div style="position:relative;z-index:1;">
+    <div class="hero-tag">Statistical Research Presentation</div>
+
+    <h1 class="hero-title">
+      Justice<br>
+      <span class="em">Delayed,</span><br>
+      Justice Denied
+    </h1>
+
+    <p class="hero-subtitle">
+      A rigorous statistical investigation into bail processing times across the Indian judicial system — 
+      proving that <strong>Anticipatory Bail applications take significantly longer to resolve</strong> 
+      than Regular Bail applications.
+    </p>
+
+    <div class="hero-meta">
+      <div class="hero-authors">
+        <span class="label">Research Team</span>
+        <span class="names">Zaheem &nbsp;·&nbsp; Masum Abbas &nbsp;·&nbsp; Asfaar Maham Ghazi</span>
+      </div>
+      <div class="flex gap-3 flex-wrap">
+        <span class="badge badge-red">DAKSH Legal Dataset</span>
+        <span class="badge badge-amber">9,870 Cases Analyzed</span>
+        <span class="badge badge-muted">Non-Parametric &amp; Survival Analysis</span>
+      </div>
+    </div>
+
+    <div class="hero-stat-strip">
+      <div class="hero-stat">
+        <span class="val">9,870</span>
+        <span class="desc">Total Cases</span>
+      </div>
+      <div class="hero-stat">
+        <span class="val">33</span>
+        <span class="desc">Anticipatory Median (days)</span>
+      </div>
+      <div class="hero-stat">
+        <span class="val">20</span>
+        <span class="desc">Regular Median (days)</span>
+      </div>
+      <div class="hero-stat">
+        <span class="val">p&lt;.001</span>
+        <span class="desc">Statistical Significance</span>
+      </div>
+      <div class="hero-stat">
+        <span class="val">4</span>
+        <span class="desc">Analytical Phases</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- QUOTE -->
+<div class="big-quote">
+  <blockquote>
+    "The wheels of justice turn slowly, but grind exceedingly fine — yet for thousands awaiting bail, they barely turn at all."
+  </blockquote>
+  <cite>— Research Motivation, DAKSH Dataset Analysis 2024</cite>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════════════ METHODOLOGY ══════════════════════════════ -->
+<section id="methodology">
+  <div class="section-wrapper">
+    <div class="section-label reveal">Dataset &amp; Methods</div>
+    <h2 class="section-title reveal reveal-delay-1">
+      A <span class="italic">four-phase</span> analytical journey
+    </h2>
+    <p class="section-intro reveal reveal-delay-2">
+      Rather than applying a single test, our research systematically escalates analytical rigor — 
+      from normality diagnostics through survival analysis — each phase revealing deeper truths about 
+      delays in the Indian bail system.
+    </p>
+
+    <div class="timeline reveal reveal-delay-3">
+      <div class="timeline-step">
+        <div class="step-label">Dataset</div>
+        <h4>DAKSH Legal Database — 9,870 Bail Cases</h4>
+        <p>The dataset covers bail petitions filed across Indian High Courts, capturing case type (Anticipatory vs. Regular), filing date, resolution date, and hearing counts. A key challenge: thousands of pending cases with no resolution date — <em>censored data</em>.</p>
+      </div>
+      <div class="timeline-step">
+        <div class="step-label">Phase 1 — Normality</div>
+        <h4>Can we use parametric tests?</h4>
+        <p>Kolmogorov-Smirnov test on <code>Duration_Days</code>. Extreme right-skew, multi-year outliers. Answer: <strong>No</strong> — the data violates normality assumptions entirely.</p>
+      </div>
+      <div class="timeline-step">
+        <div class="step-label">Phase 2 — Non-Parametric</div>
+        <h4>Mann-Whitney U Test (the honest comparison)</h4>
+        <p>No distributional assumptions. Uses rank-ordering. Directly compares Anticipatory vs. Regular bail durations. Result: unambiguous, highly significant difference.</p>
+      </div>
+      <div class="timeline-step">
+        <div class="step-label">Phase 3 — Parametric Trap</div>
+        <h4>Log-transformation attempt &amp; Independent T-Test</h4>
+        <p>We filtered pending cases, applied LN transformation to approach normality, ran a T-Test. It worked — but cost us thousands of censored observations. A methodological lesson.</p>
+      </div>
+      <div class="timeline-step">
+        <div class="step-label">Phase 4 — Survival Analysis</div>
+        <h4>Kaplan-Meier: the gold standard for censored data</h4>
+        <p>Reinstating every pending case as right-censored data. Kaplan-Meier survival curves with Log-Rank test give the most complete, statistically sound answer possible.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════════════ CORE HYPOTHESIS ══════════════════════════════ -->
+<section id="core">
+  <div class="section-wrapper">
+    <div class="section-label reveal">Section 1 — Zaheem's Focus</div>
+    <h2 class="section-title reveal reveal-delay-1">
+      The Core <span class="italic">Hypothesis</span>
+    </h2>
+    <p class="section-intro reveal reveal-delay-2">
+      H₁: <em>Anticipatory bail applications take significantly longer to process than regular bail applications.</em>
+      We test this through four rigorous phases, each building on the last.
+    </p>
+
+    <!-- Phase Tabs -->
+    <div class="phase-tabs reveal reveal-delay-3" role="tablist">
+      <button class="phase-tab active" onclick="switchPhase(1)" role="tab" aria-selected="true">
+        <span class="phase-num">Phase 01</span>
+        Normality Check
+      </button>
+      <button class="phase-tab" onclick="switchPhase(2)" role="tab" aria-selected="false">
+        <span class="phase-num">Phase 02</span>
+        Mann-Whitney U
+      </button>
+      <button class="phase-tab" onclick="switchPhase(3)" role="tab" aria-selected="false">
+        <span class="phase-num">Phase 03</span>
+        Log Transform &amp; T-Test
+      </button>
+      <button class="phase-tab" onclick="switchPhase(4)" role="tab" aria-selected="false">
+        <span class="phase-num">Phase 04</span>
+        Kaplan-Meier
+      </button>
+    </div>
+
+    <!-- ── PHASE 1 ── -->
+    <div class="phase-panel active" id="phase-1">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">KS Test — p-value</div>
+          <div class="value accent">p &lt; .001</div>
+          <div class="sub">Data is not normally distributed</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Distribution Shape</div>
+          <div class="value" style="font-size:1.4rem;">Right-Skewed</div>
+          <div class="sub">Extreme positive skewness</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Max Outlier Observed</div>
+          <div class="value accent2">~3,650</div>
+          <div class="sub">Days (≈ 10 years pending)</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Test Used</div>
+          <div class="value" style="font-size:1.2rem;">Kolmogorov-<br>Smirnov</div>
+          <div class="sub">Goodness-of-fit</div>
+        </div>
+      </div>
+
+      <div class="insight-box">
+        <div class="insight-label">⚠ Key Insight — Normality Violation</div>
+        <p>
+          The Kolmogorov-Smirnov test conclusively rejects normality (p &lt; .001). 
+          The distribution of <code>Duration_Days</code> is sharply right-skewed with a long tail of multi-year outliers — 
+          cases still pending after <strong>3,000–3,650 days</strong>. Standard parametric tests like ANOVA or T-Test 
+          cannot be validly applied to this raw data. This finding motivates our non-parametric and survival analysis approach.
+        </p>
+      </div>
+
+     <img src="images/Hist_QQ.png" alt="Pre-Transformation Histogram" class="w-full h-auto rounded-lg shadow-md border border-gray-700">
+      </div>
+    </div>
+
+    <!-- ── PHASE 2 ── -->
+    <div class="phase-panel" id="phase-2">
+      <h3 class="serif text-2xl mb-4" style="font-weight:700;">Non-Parametric Proof</h3>
+      <p class="text-sm mb-6" style="color:rgba(245,240,232,0.6);line-height:1.8;">
+        The Mann-Whitney U test compares rank distributions without assuming normality. 
+        If Anticipatory bails consistently receive higher rank numbers (longer durations), 
+        the mean rank for Anticipatory will be significantly higher.
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Anticipatory — Mean Rank</div>
+          <div class="value accent">5,389</div>
+          <div class="sub">Higher rank = longer duration</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Regular Bail — Mean Rank</div>
+          <div class="value accent2">4,349</div>
+          <div class="sub">Significantly lower rank</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Anticipatory Median</div>
+          <div class="value accent">33 days</div>
+          <div class="sub">Median processing time</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Regular Bail Median</div>
+          <div class="value accent2">20 days</div>
+          <div class="sub">Median processing time</div>
+        </div>
+      </div>
+
+      <!-- Bar comparison visual -->
+      <div class="bar-compare">
+        <div class="bar-row" data-bar>
+          <div class="bar-label">Anticipatory</div>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill-a" style="--w: 82%"></div>
+          </div>
+          <div class="bar-val">33 days</div>
+        </div>
+        <div class="bar-row" data-bar>
+          <div class="bar-label">Regular Bail</div>
+          <div class="bar-track">
+            <div class="bar-fill bar-fill-r" style="--w: 50%"></div>
+          </div>
+          <div class="bar-val">20 days</div>
+        </div>
+      </div>
+      <p class="text-xs mono" style="color:var(--muted);margin-top:-0.5rem;margin-bottom:1.5rem;">↑ Median Processing Time (normalized to Anticipatory = 82%)</p>
+
+      <div class="result-box">
+        <div>
+          <div class="verdict">Mann-Whitney U — Verdict</div>
+          <div class="p-val">p &lt; .001</div>
+        </div>
+        <p>
+          The difference in rank distributions is statistically significant at the 0.1% level. 
+          Anticipatory bail cases demonstrably and consistently take longer to resolve than Regular bail cases.
+          The median gap is <strong>13 additional days</strong> — a 65% increase in waiting time.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── PHASE 3 ── -->
+    <div class="phase-panel" id="phase-3">
+      <h3 class="serif text-2xl mb-4" style="font-weight:700;">The Parametric Trap</h3>
+      <p class="text-sm mb-6" style="color:rgba(245,240,232,0.6);line-height:1.8;">
+        We attempted to satisfy parametric assumptions through log-transformation. 
+        This required <strong>filtering out all pending/censored cases</strong> — a significant data loss.
+        The T-Test succeeded, but the cost was enormous.
+      </p>
+
+      <div class="formula">Transformed Variable: LN(Duration_Days)</div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Anticipatory — Log Mean</div>
+          <div class="value accent">3.37</div>
+          <div class="sub">After LN transformation</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Regular — Log Mean</div>
+          <div class="value accent2">2.97</div>
+          <div class="sub">After LN transformation</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">T-Test p-value</div>
+          <div class="value accent">p &lt; .001</div>
+          <div class="sub">Statistically significant</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Data Cost</div>
+          <div class="value" style="font-size:1.3rem;color:#ef4444;">Thousands</div>
+          <div class="sub">Censored cases excluded</div>
+        </div>
+      </div>
+
+      <div class="insight-box">
+        <div class="insight-label">⚠ The Trap — Why This Approach Is Flawed</div>
+        <p>
+          While the T-Test confirms the hypothesis (p &lt; .001), excluding pending cases introduces 
+          <strong>survivorship bias</strong>. Cases that are still unresolved are precisely the longest-running ones — 
+          the very evidence that matters most. By dropping them, we systematically underestimate processing times, 
+          particularly for the Anticipatory group. This is why Phase 4 is necessary.
+        </p>
+      </div>
+
+<img src="images/Post_T.png" alt="Graph" class="max-w-2xl w-full mx-auto block h-auto rounded-lg shadow-md border border-gray-700">
+      </div>
+    </div>
+
+    <!-- ── PHASE 4 ── -->
+    <div class="phase-panel" id="phase-4">
+      <h3 class="serif text-2xl mb-4" style="font-weight:700;">The Climax — Kaplan-Meier Survival Analysis</h3>
+      <p class="text-sm mb-6" style="color:rgba(245,240,232,0.6);line-height:1.8;">
+        Survival analysis was designed for exactly this problem: time-to-event data with censored observations. 
+        Here, "resolution" is the event; pending cases are <em>right-censored</em>. 
+        Every case is included. No data is discarded.
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Anticipatory — KM Median</div>
+          <div class="value accent">32 days</div>
+          <div class="sub">Survival median (50% resolved)</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Regular — KM Median</div>
+          <div class="value accent2">20 days</div>
+          <div class="sub">Survival median (50% resolved)</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Log-Rank Chi-Square</div>
+          <div class="value accent">92.202</div>
+          <div class="sub">df = 1</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Log-Rank p-value</div>
+          <div class="value accent">p &lt; .001</div>
+          <div class="sub">Definitive significance</div>
+        </div>
+      </div>
+
+      <div class="result-box">
+        <div>
+          <div class="verdict">Final Verdict — H₁ Accepted</div>
+          <div class="p-val">χ² = 92.202, p &lt; .001</div>
+        </div>
+        <p>
+          With all censored data included, Kaplan-Meier survival curves show the Anticipatory bail 
+          survival function consistently <em>above</em> the Regular bail curve — meaning at every time point, 
+          a lower proportion of Anticipatory cases have been resolved. The Log-Rank test confirms this 
+          difference is overwhelmingly significant: <strong>H₁ is supported.</strong>
+        </p>
+      </div>
+
+    
+         <div class="chart-placeholder">
+         <img src="images/KME.png" alt="Graph" class="max-w-2xl w-full mx-auto block h-auto rounded-lg shadow-md border border-gray-700">
+        </div>
+
+      <!-- Comparison Table -->
+      <h4 class="mono text-xs tracking-widest text-gray-500 uppercase mt-8 mb-4">Summary: All Four Phases</h4>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Test</th>
+            <th>Anticipatory</th>
+            <th>Regular</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-muted">01</span></td>
+            <td>Kolmogorov-Smirnov</td>
+            <td colspan="2" style="color:var(--muted);">Non-normal distribution confirmed</td>
+            <td><span class="sig">p &lt; .001</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-amber">02</span></td>
+            <td>Mann-Whitney U</td>
+            <td><span class="bail-a">Rank = 5,389 | Median = 33d</span></td>
+            <td><span class="bail-r">Rank = 4,349 | Median = 20d</span></td>
+            <td><span class="sig">p &lt; .001</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-muted">03</span></td>
+            <td>Independent T-Test</td>
+            <td><span class="bail-a">Log Mean = 3.37</span></td>
+            <td><span class="bail-r">Log Mean = 2.97</span></td>
+            <td><span class="sig">p &lt; .001</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-red">04</span></td>
+            <td>Kaplan-Meier Log-Rank</td>
+            <td><span class="bail-a">KM Median = 32d</span></td>
+            <td><span class="bail-r">KM Median = 20d</span></td>
+            <td><span class="sig">χ²=92.202, p&lt;.001</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════════════ SECONDARY INSIGHTS ══════════════════════════════ -->
+<section id="secondary">
+  <div class="section-wrapper">
+    <div class="section-label reveal">Section 2 — Group Contributions</div>
+    <h2 class="section-title reveal reveal-delay-1">
+      Secondary <span class="italic">Insights</span>
+    </h2>
+    <p class="section-intro reveal reveal-delay-2">
+      Two additional analyses uncover systemic patterns that compound the delay problem — 
+      hearing adjournments as a delay mechanism, and escalating backlogs over time.
+    </p>
+
+    <!-- Secondary Tabs -->
+    <div class="secondary-tabs reveal reveal-delay-3">
+      <button class="sec-tab active" onclick="switchSecondary('A')">
+        Insight A — Hearing Frequency Trap
+      </button>
+      <button class="sec-tab" onclick="switchSecondary('B')">
+        Insight B — Yearly Backlog
+      </button>
+    </div>
+
+    <!-- INSIGHT A -->
+    <div id="sec-A" class="phase-panel active">
+      <div class="section-label" style="margin-bottom:1rem;">Masum Abbas's Focus</div>
+      <h3 class="serif text-2xl mb-3" style="font-weight:700;">The Hearing Frequency Trap</h3>
+      <p class="text-sm mb-6" style="color:rgba(245,240,232,0.6);line-height:1.8;">
+        Conventional wisdom assumes more hearings = faster resolution (more court attention). 
+        Our data reveals the opposite: more hearings are a <em>symptom</em> — and a <em>cause</em> — of prolonged delays.
+        Each hearing that ends in adjournment adds calendar time.
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Spearman's rₛ</div>
+          <div class="value accent">0.351</div>
+          <div class="sub">Moderate positive correlation</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">p-value</div>
+          <div class="value accent">p &lt; .001</div>
+          <div class="sub">Highly significant</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Variables Correlated</div>
+          <div class="value" style="font-size:1rem;line-height:1.3;">Hearing Count vs. Duration Days</div>
+          <div class="sub">Both ordinal-treated for Spearman</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Direction</div>
+          <div class="value" style="font-size:1.2rem;color:#ef4444;">Positive ↑</div>
+          <div class="sub">More hearings → longer cases</div>
+        </div>
+      </div>
+
+      <div class="insight-box">
+        <div class="insight-label">💡 Interpretation — The Adjournment Cycle</div>
+        <p>
+          rₛ = 0.351 indicates a statistically significant moderate positive relationship. 
+          While correlation ≠ causation, the mechanism is plausible: each adjournment 
+          (rescheduled hearing) adds weeks to a case's timeline, generating more hearing records while 
+          simultaneously increasing duration. This creates a self-reinforcing delay cycle — 
+          especially visible in Anticipatory bail cases, which may involve more complex legal arguments.
+        </p>
+      </div>
+
+     <div class="img-placeholder" style="padding: 0;">
+<img src="images/Cor.png" alt="Graph" class="max-w-2xl w-full mx-auto block h-auto rounded-lg shadow-md border border-gray-700">
+</div>
+      </div>
+    </div>
+
+    <!-- INSIGHT B -->
+    <div id="sec-B" class="phase-panel">
+      <div class="section-label" style="margin-bottom:1rem;">Asfaar Maham Ghazi's Focus</div>
+      <h3 class="serif text-2xl mb-3" style="font-weight:700;">The Yearly Backlog Crisis</h3>
+      <p class="text-sm mb-6" style="color:rgba(245,240,232,0.6);line-height:1.8;">
+        Not all years are equal. Cases filed in earlier years (2010–2015) have accumulated extraordinary 
+        pending durations — stretching beyond 3,000 days with no resolution. 
+        A Kruskal-Wallis test across filing years reveals whether this variation is statistically significant.
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Test Used</div>
+          <div class="value" style="font-size:1.1rem;">Kruskal-Wallis<br>1-Way ANOVA</div>
+          <div class="sub">Non-parametric group comparison</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Grouping Variable</div>
+          <div class="value" style="font-size:1.4rem;">YEAR</div>
+          <div class="sub">Filing year of case</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Test Result</div>
+          <div class="value accent">p &lt; .001</div>
+          <div class="sub">Significant year-wise variation</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Oldest Cases</div>
+          <div class="value accent2">3,000–<br>4,000</div>
+          <div class="sub">Days pending (2010–2015 cohort)</div>
+        </div>
+      </div>
+
+      <div class="insight-box">
+        <div class="insight-label">📌 Key Finding — Right-Censoring Accumulation</div>
+        <p>
+          The Kruskal-Wallis result (p &lt; .001) confirms that processing times differ 
+          significantly across filing years. Older case cohorts (2010–2015) show <strong>extreme right-censoring</strong> — 
+          cases filed a decade ago still showing as pending, with durations exceeding 3,000–4,000 days. 
+          This reveals a systemic backlog problem: unresolved cases from earlier years are never fully cleared, 
+          and the judicial system accumulates structural debt year over year.
+        </p>
+      </div>
+
+     <div class="img-placeholder" style="padding: 0;">
+<img src="images/3rd.png" alt="Graph" class="max-w-2xl w-full mx-auto block h-auto rounded-lg shadow-md border border-gray-700">
+</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ══════════════════════════════ CONCLUSION ══════════════════════════════ -->
+<section id="conclusion">
+  <div class="section-wrapper">
+    <div class="section-label reveal">Section 3 — Summary</div>
+    <h2 class="section-title reveal reveal-delay-1">
+      What the data <span class="italic">proves</span>
+    </h2>
+    <p class="section-intro reveal reveal-delay-2">
+      Across four analytical phases and two secondary investigations, the evidence 
+      converges on a single, inescapable conclusion.
+    </p>
+
+    <!-- Findings cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-px reveal reveal-delay-3" style="background:var(--line);border:1px solid var(--line);border-radius:2px;overflow:hidden;margin-bottom:3rem;">
+
+      <div class="stat-card" style="padding:2rem;">
+        <div class="label mb-3">Primary Finding</div>
+        <h4 class="serif text-xl mb-3" style="font-weight:700;line-height:1.3;">
+          Anticipatory bail takes <span style="color:var(--accent);">65% longer</span> than Regular bail
+        </h4>
+        <p style="font-size:0.875rem;color:rgba(245,240,232,0.6);line-height:1.7;">
+          Median of 33 days vs. 20 days. Confirmed by both Mann-Whitney U and Kaplan-Meier 
+          survival analysis with overwhelming statistical significance (p &lt; .001 across all tests). 
+          H₁ is fully supported.
+        </p>
+      </div>
+
+      <div class="stat-card" style="padding:2rem;">
+        <div class="label mb-3">Methodological Finding</div>
+        <h4 class="serif text-xl mb-3" style="font-weight:700;line-height:1.3;">
+          Standard parametric tests <span style="color:var(--accent2);">are insufficient</span> for legal time-to-event data
+        </h4>
+        <p style="font-size:0.875rem;color:rgba(245,240,232,0.6);line-height:1.7;">
+          Log-transformation and T-Testing work only after discarding pending cases — 
+          introducing survivorship bias. Survival analysis is the methodologically correct approach 
+          for censored judicial data.
+        </p>
+      </div>
+
+      <div class="stat-card" style="padding:2rem;">
+        <div class="label mb-3">Secondary Finding — Masum</div>
+        <h4 class="serif text-xl mb-3" style="font-weight:700;line-height:1.3;">
+          More hearings <span style="color:var(--accent);">signal</span> longer delays, not faster justice
+        </h4>
+        <p style="font-size:0.875rem;color:rgba(245,240,232,0.6);line-height:1.7;">
+          Spearman's rₛ = 0.351 (p &lt; .001). Adjournments compound each other. 
+          Policy must target hearing quality over hearing quantity to break the delay cycle.
+        </p>
+      </div>
+
+      <div class="stat-card" style="padding:2rem;">
+        <div class="label mb-3">Secondary Finding — Maham</div>
+        <h4 class="serif text-xl mb-3" style="font-weight:700;line-height:1.3;">
+          The backlog crisis is <span style="color:var(--accent2);">structural and accumulating</span>
+        </h4>
+        <p style="font-size:0.875rem;color:rgba(245,240,232,0.6);line-height:1.7;">
+          Cases from 2010–2015 show extreme right-censoring (3,000–4,000+ days). 
+          Kruskal-Wallis confirms year-wise differences are significant (p &lt; .001). 
+          The system does not clear its backlog — it grows it.
+        </p>
+      </div>
+    </div>
+
+    <!-- Policy Recommendations -->
+    <h3 class="serif text-xl mb-4 reveal" style="font-weight:700;">Policy Implications</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 reveal reveal-delay-1">
+      <div style="padding:1.5rem;border:1px solid var(--line);border-radius:2px;background:rgba(255,255,255,0.02);">
+        <div class="badge badge-red mb-3">Implication 01</div>
+        <h5 class="serif font-bold mb-2">Expedited Anticipatory Bail Tracks</h5>
+        <p style="font-size:0.82rem;color:rgba(245,240,232,0.55);line-height:1.7;">
+          Courts should establish fast-track benches specifically for Anticipatory bail petitions, 
+          recognizing their statistically longer processing times.
+        </p>
+      </div>
+      <div style="padding:1.5rem;border:1px solid var(--line);border-radius:2px;background:rgba(255,255,255,0.02);">
+        <div class="badge badge-amber mb-3">Implication 02</div>
+        <h5 class="serif font-bold mb-2">Adjournment Caps &amp; Accountability</h5>
+        <p style="font-size:0.82rem;color:rgba(245,240,232,0.55);line-height:1.7;">
+          Statutory limits on the number of permissible adjournments per bail petition 
+          would directly address the hearing-delay correlation discovered in Insight A.
+        </p>
+      </div>
+      <div style="padding:1.5rem;border:1px solid var(--line);border-radius:2px;background:rgba(255,255,255,0.02);">
+        <div class="badge badge-muted mb-3">Implication 03</div>
+        <h5 class="serif font-bold mb-2">Backlog Clearance Initiatives</h5>
+        <p style="font-size:0.82rem;color:rgba(245,240,232,0.55);line-height:1.7;">
+          Dedicated drives to resolve pre-2016 pending cases are urgently needed; 
+          the data shows these cases will not self-resolve within the current system's capacity.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ FOOTER ══════════════════════════════ -->
+<footer>
+  <div class="ft-left">
+    <span class="ft-title">Justice Delayed, Justice Denied</span>
+    <span class="ft-meta">DAKSH Dataset · 9,870 Cases · Statistical Analysis 2024</span>
+    <span class="ft-meta" style="margin-top:0.25rem;">Zaheem · Masum Abbas · Asfaar Maham Ghazi</span>
+  </div>
+  <div class="ft-right">
+    <a href="#hero">Back to Top</a>
+    <a href="#core">Core Hypothesis</a>
+    <a href="#secondary">Secondary Insights</a>
+    <a href="#conclusion">Findings</a>
+  </div>
+</footer>
+
+<script>
+// ─── PROGRESS BAR ───
+window.addEventListener('scroll', () => {
+  const scrollTop = document.documentElement.scrollTop;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = (scrollTop / docHeight) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+});
+
+// ─── NAVBAR SCROLL ───
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('navbar');
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+
+  // Active nav link
+  const sections = ['methodology', 'core', 'secondary', 'conclusion'];
+  let current = '';
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && window.scrollY >= el.offsetTop - 120) current = id;
+  });
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+  });
+});
+
+// ─── MOBILE MENU ───
+document.getElementById('menu-btn').addEventListener('click', () => {
+  document.getElementById('mobile-menu').classList.add('open');
+});
+document.getElementById('menu-close').addEventListener('click', closeMobileMenu);
+function closeMobileMenu() {
+  document.getElementById('mobile-menu').classList.remove('open');
+}
+
+// ─── PHASE TABS ───
+function switchPhase(num) {
+  document.querySelectorAll('.phase-tab').forEach((tab, i) => {
+    tab.classList.toggle('active', i + 1 === num);
+    tab.setAttribute('aria-selected', i + 1 === num);
+  });
+  document.querySelectorAll('[id^="phase-"]').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'phase-' + num);
+  });
+  animateBars();
+}
+
+// ─── SECONDARY TABS ───
+function switchSecondary(key) {
+  document.querySelectorAll('.sec-tab').forEach((tab, i) => {
+    const keys = ['A', 'B'];
+    tab.classList.toggle('active', keys[i] === key);
+  });
+  document.querySelectorAll('[id^="sec-"]').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'sec-' + key);
+  });
+}
+
+// ─── BAR ANIMATIONS ───
+function animateBars() {
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(bar => {
+      bar.classList.add('animated');
+    });
+  }, 100);
+}
+// Trigger on initial load
+animateBars();
+
+// ─── REVEAL ON SCROLL ───
+const revealEls = document.querySelectorAll('.reveal');
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+revealEls.forEach(el => revealObserver.observe(el));
+
+// ─── RE-ANIMATE BARS ON SCROLL INTO VIEW ───
+const barObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.querySelectorAll('.bar-fill').forEach(bar => {
+        bar.classList.remove('animated');
+        void bar.offsetWidth; // reflow
+        bar.classList.add('animated');
+      });
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.bar-compare').forEach(el => barObserver.observe(el));
+</script>
+</body>
+</html>
